@@ -7,14 +7,46 @@
 
 ```json
 {
-    "stateMachineArn": "arn:aws:states:us-east-1:000000000000:stateMachine:NumberProcessorSF",
-    "name": "NumberProcessorSF",
-    "status": "ACTIVE",
-    "definition": "{\n  \"Comment\": \"Ejecuta las Lambdas seg<C3><BA>n si el n<C3><BA>mero es par o impar\",\n  \"StartAt\": \"NumberGenerator\",\n  \"States\": {\n    \"NumberGenerator\": {\n      \"Type\": \"Task\",\n      \"Resource\": \"arn:aws:lambda:us-east-1:000000000000:function:poc_number_generator_lambda\",\n      \"Next\": \"IsNumberEven\"\n    },\n    \"IsNumberEven\": {\n      \"Type\": \"Choice\",\n      \"Choices\": [\n        {\n          \"Variable\": \"$.is_even\",\n          \"BooleanEquals\": true,\n          \"Next\": \"Even\"\n        }\n      ],\n      \"Default\": \"Odd\"\n    },\n    \"Even\": {\n      \"Type\": \"Task\",\n      \"Resource\": \"arn:aws:lambda:us-east-1:000000000000:function:poc_even_lambda\",\n      \"End\": true\n    },\n    \"Odd\": {\n      \"Type\": \"Task\",\n      \"Resource\": \"arn:aws:lambda:us-east-1:000000000000:function:poc_odd_lambda\",\n      \"End\": true\n    }\n  }\n}\n",
-    "roleArn": "arn:aws:iam::000000000000:role/step_functions_role_poc_number_sf",
-    "type": "STANDARD",
-    "creationDate": "2024-04-07T10:05:06.325416-04:00"
+  "stateMachineArn": "arn:aws:states:us-east-1:000000000000:stateMachine:NumberProcessorSF",
+  "name": "NumberProcessorSF",
+  "status": "ACTIVE",
+  "definition": {
+    "Comment": "Ejecuta las Lambdas seg<C3><BA>n si el n<C3><BA>mero es par o impar",
+    "StartAt": "NumberGenerator",
+    "States": {
+      "NumberGenerator": {
+        "Type": "Task",
+        "Resource": "arn:aws:lambda:us-east-1:000000000000:function:poc_number_generator_lambda",
+        "Next": "IsNumberEven"
+      },
+      "IsNumberEven": {
+        "Type": "Choice",
+        "Choices": [
+          {
+            "Variable": "$.is_even",
+            "BooleanEquals": true,
+            "Next": "Even"
+          }
+        ],
+        "Default": "Odd"
+      },
+      "Even": {
+        "Type": "Task",
+        "Resource": "arn:aws:lambda:us-east-1:000000000000:function:poc_even_lambda",
+        "End": true
+      },
+      "Odd": {
+        "Type": "Task",
+        "Resource": "arn:aws:lambda:us-east-1:000000000000:function:poc_odd_lambda",
+        "End": true
+      }
+    }
+  },
+  "roleArn": "arn:aws:iam::000000000000:role/step_functions_role_poc_number_sf",
+  "type": "STANDARD",
+  "creationDate": "2024-04-07T10:05:06.325416-04:00"
 }
+
 ```
 
 ### Step function tutorial provided by LocalStack
