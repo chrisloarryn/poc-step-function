@@ -11,7 +11,7 @@
   "name": "NumberProcessorSF",
   "status": "ACTIVE",
   "definition": {
-    "Comment": "Ejecuta las Lambdas seg<C3><BA>n si el n<C3><BA>mero es par o impar",
+    "Comment": "Ejecuta las Lambdas según si el número es par o impar",
     "StartAt": "NumberGenerator",
     "States": {
       "NumberGenerator": {
