@@ -1,10 +1,10 @@
 # POC Step Functions Calculator
 
-Este repositorio implementa una calculadora orquestada con AWS Step Functions, Terraform y Lambdas en varios runtimes. La state machine recibe dos numeros y una operacion, valida el request, enruta la ejecucion hacia la Lambda correcta y devuelve una respuesta final uniforme.
+This repository contains a calculator workflow built with AWS Step Functions, Terraform, and Lambda functions implemented in multiple runtimes. The state machine receives two numbers and an operation, validates the request, routes execution to the correct Lambda, and returns a normalized final response.
 
-La idea del proyecto es dejar un ejemplo casi listo para desplegar en AWS. En la practica, lo unico que falta para correr el workflow de GitHub Actions es configurar los secrets de credenciales.
+The repository is intended to be almost ready for AWS deployment. In practice, the main remaining setup step is adding AWS credentials to GitHub Actions secrets.
 
-## Arquitectura
+## Architecture
 
 ```mermaid
 flowchart LR
@@ -22,15 +22,15 @@ flowchart LR
     H --> I
 ```
 
-## Flujo
+## Workflow
 
-1. `ValidateRequest` recibe `left`, `right` y `operation` o `action`.
-2. La Lambda valida que ambos valores sean numericos y normaliza aliases como `+`, `sum`, `-`, `*`, `/` y `%`.
-3. `RouteOperation` en Step Functions decide que Lambda ejecutar.
-4. La Lambda de operacion calcula el resultado en su runtime.
-5. `FormatResult` arma una salida final consistente para logs, APIs o pruebas.
+1. `ValidateRequest` receives `left`, `right`, and either `operation` or `action`.
+2. The validation Lambda ensures both values are numeric and normalizes aliases such as `+`, `sum`, `-`, `*`, `/`, and `%`.
+3. `RouteOperation` in Step Functions selects the correct operation Lambda.
+4. The selected Lambda computes the result in its own runtime.
+5. `FormatResult` produces a consistent response for logs, APIs, or tests.
 
-Input de ejemplo:
+Sample input:
 
 ```json
 {
@@ -40,7 +40,7 @@ Input de ejemplo:
 }
 ```
 
-Output de ejemplo:
+Sample output:
 
 ```json
 {
@@ -55,7 +55,7 @@ Output de ejemplo:
 }
 ```
 
-## Operaciones soportadas
+## Supported operations
 
 - `add`
 - `subtract`
@@ -63,33 +63,35 @@ Output de ejemplo:
 - `divide`
 - `percentage`
 
-Tambien se aceptan aliases como `+`, `-`, `*`, `/`, `%`, `sum` y `percent`.
+The validator also accepts aliases such as `+`, `-`, `*`, `/`, `%`, `sum`, and `percent`.
 
-## Lambdas del proyecto
+## Lambda inventory
 
 - `01_validate_request_ts`
-  Runtime: TypeScript compilado a Node.js 22
-  Responsabilidad: validar input, normalizar la operacion y bloquear errores obvios antes del routing.
+  Runtime: TypeScript compiled to Node.js 22
+  Responsibility: validate input, normalize the operation, and block obvious request errors before routing.
 - `02_add_go`
-  Runtime: Go con `provided.al2023`
-  Responsabilidad: sumar dos numeros.
+  Runtime: Go on `provided.al2023`
+  Responsibility: add two numbers.
 - `03_subtract_rust`
-  Runtime: Rust con `provided.al2023`
-  Responsabilidad: restar dos numeros.
+  Runtime: Rust on `provided.al2023`
+  Responsibility: subtract two numbers.
 - `04_multiply_python`
   Runtime: Python 3.12
-  Responsabilidad: multiplicar dos numeros.
+  Responsibility: multiply two numbers.
 - `05_divide_node`
   Runtime: Node.js 22
-  Responsabilidad: dividir dos numeros y proteger contra division por cero.
+  Responsibility: divide two numbers and protect against division by zero.
 - `06_percentage_ts`
-  Runtime: TypeScript compilado a Node.js 22
-  Responsabilidad: calcular `left * right / 100`.
+  Runtime: TypeScript compiled to Node.js 22
+  Responsibility: compute `left * right / 100`.
 - `07_format_result_node`
   Runtime: Node.js 22
-  Responsabilidad: construir la respuesta final con `summary` y timestamps.
+  Responsibility: build the final response with a human-readable summary and completion timestamp.
 
-## Estructura del repo
+Each Lambda folder also includes its own `README.md` with runtime-specific details.
+
+## Repository structure
 
 ```text
 .
@@ -108,44 +110,44 @@ Tambien se aceptan aliases como `+`, `-`, `*`, `/`, `%`, `sum` y `percent`.
 `-- README.md
 ```
 
-## Por que usar Step Functions
+## Why Step Functions
 
-Paso importante: Step Functions no reemplaza una maquina de estado, sino que es el servicio administrado de AWS para implementarla.
+Step Functions is not an alternative to a state machine. It is the managed AWS service used to implement one.
 
-En este caso conviene porque:
+This solution is a good fit for Step Functions because it:
 
-- separa claramente la orquestacion de la logica de negocio de cada Lambda
-- hace visible el flujo y el routing por operacion desde la consola de AWS
-- permite agregar `Retry`, `Catch`, `Wait`, `Parallel` o `Map` sin reescribir toda la solucion
-- permite combinar runtimes distintos en el mismo proceso
-- mejora observabilidad y trazabilidad de la ejecucion completa
+- keeps orchestration separate from Lambda business logic
+- makes routing and execution flow visible in the AWS console
+- allows retries, catches, waits, parallel branches, or maps to be added without rewriting the whole solution
+- supports mixing multiple runtimes in the same workflow
+- improves observability across the entire execution
 
-## Por que no usar Serverless Framework aqui
+## Why this repository does not use Serverless Framework
 
-No agregue Serverless Framework porque Terraform ya cubre toda la capa de infraestructura que necesita este proyecto:
+Serverless Framework was intentionally not added because Terraform already covers the infrastructure responsibilities needed here:
 
 - IAM
 - Lambda
 - CloudWatch Logs
 - Step Functions
-- empaquetado de artefactos
-- variables por entorno
+- artifact packaging
+- environment variables and deployment parameters
 
-Agregar otra capa de IaC sobre Terraform aumentaria complejidad y duplicaria responsabilidades.
+Adding another infrastructure layer on top of Terraform would duplicate responsibilities and add operational complexity without a clear benefit for this example.
 
-## Estado actual de Terraform
+## Terraform status
 
-La carpeta [terraform](/Users/cristobalcontreras/GitHub/poc-step-function/terraform) ya quedo orientada a despliegue real:
+The [terraform](/Users/cristobalcontreras/GitHub/poc-step-function/terraform) directory is already structured for a realistic deployment:
 
-- providers actualizados y `.terraform.lock.hcl` renovado
-- `terraform_data` para disparar el build local de artefactos
-- `archive_file` para zippear cada Lambda desde `build/lambdas/`
-- IAM de menor privilegio para que Step Functions invoque solo las Lambdas del proyecto
-- CloudWatch Log Groups para Lambdas y state machine
-- definicion de la state machine en HCL via `jsonencode`
-- outputs utiles para identificar recursos y payload de ejemplo
+- updated providers and refreshed `.terraform.lock.hcl`
+- `terraform_data` to trigger local artifact builds
+- `archive_file` packaging from `build/lambdas/`
+- scoped IAM so Step Functions can invoke only the project Lambdas
+- CloudWatch log groups for Lambdas and the state machine
+- state machine definition written in HCL with `jsonencode`
+- outputs for resource discovery and a sample execution payload
 
-Variables principales:
+Main variables:
 
 - `aws_region`
 - `project_name`
@@ -154,36 +156,36 @@ Variables principales:
 - `lambda_memory_size`
 - `log_retention_days`
 
-## Build local
+## Local build
 
-Instalacion de tooling Node del repo:
+Install Node.js tooling for the repository:
 
 ```bash
 npm ci
 ```
 
-Build de artefactos:
+Build Lambda artifacts:
 
 ```bash
 ./scripts/build_lambdas.sh
 ```
 
-El script genera los paquetes listos para Terraform en `build/lambdas/`.
+The script writes deployable Lambda artifacts to `build/lambdas/`.
 
-### Requisitos locales
+### Local requirements
 
 - Node.js 22
 - npm
 - Go 1.25
 - Python 3.12
-- Terraform 1.5 o superior
-- Rust estable con `rustup` y target `x86_64-unknown-linux-musl`, o Docker disponible como fallback para compilar la Lambda en Rust
+- Terraform 1.5 or newer
+- stable Rust with `rustup` and the `x86_64-unknown-linux-musl` target, or Docker as a fallback for the Rust build
 
-Nota sobre TypeScript:
+### TypeScript note
 
-- las Lambdas TypeScript usan `module` y `moduleResolution` en `NodeNext` para evitar la resolucion `node10` deprecada y quedar alineadas con versiones nuevas de TypeScript
+The TypeScript Lambdas use `module` and `moduleResolution` set to `NodeNext` so the project stays aligned with modern TypeScript behavior and avoids the deprecated `node10` resolution path.
 
-## Verificaciones utiles
+## Useful validation commands
 
 ```bash
 npm ci
@@ -193,7 +195,7 @@ terraform -chdir=terraform fmt -recursive
 terraform -chdir=terraform validate
 ```
 
-## Despliegue manual con Terraform
+## Manual Terraform deployment
 
 ```bash
 cd terraform
@@ -207,24 +209,24 @@ terraform apply
 
 ## GitHub Actions
 
-El workflow [manual-terraform-calculator.yml](/Users/cristobalcontreras/GitHub/poc-step-function/.github/workflows/manual-terraform-calculator.yml) incluye:
+The workflow [manual-terraform-calculator.yml](/Users/cristobalcontreras/GitHub/poc-step-function/.github/workflows/manual-terraform-calculator.yml) includes:
 
-- trigger manual con `workflow_dispatch`
-- concurrencia por rama
-- instalacion de Node.js, Go, Python, Rust y Terraform
-- build de todas las Lambdas
+- manual trigger with `workflow_dispatch`
+- branch-based concurrency control
+- Node.js, Go, Python, Rust, and Terraform setup
+- build steps for all Lambdas
 - `terraform fmt`
 - `terraform init`
 - `terraform validate`
 - `terraform plan`
-- `terraform apply` opcional cuando el input `terraform_action` es `apply`
+- optional `terraform apply` when `terraform_action` is set to `apply`
 
-### Secrets requeridos
+### Required secrets
 
-Para dejarlo listo para AWS solo falta configurar estos secrets en GitHub:
+To make the workflow AWS-ready, configure these GitHub secrets:
 
 - `AWS_ACCESS_KEY_ID`
 - `AWS_SECRET_ACCESS_KEY`
-- `AWS_SESSION_TOKEN` opcional si usas credenciales temporales
+- `AWS_SESSION_TOKEN` if you use temporary credentials
 
-Con eso ya puedes ejecutar el workflow manual y desplegar el stack sin tocar la definicion principal del repo.
+Once those values are configured, the repository can be deployed through the manual workflow without changing the main infrastructure definition.
