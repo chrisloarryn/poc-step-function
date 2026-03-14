@@ -1,0 +1,7 @@
+{
+  "name": "@poc-step-function/divide",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Node.js Lambda that divides two numbers.",
+  "main": "main.js"
+}

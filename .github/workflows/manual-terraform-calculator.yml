@@ -1,0 +1,101 @@
+name: Manual Terraform Calculator
+
+on:
+  workflow_dispatch:
+    inputs:
+      terraform_action:
+        description: Terraform action to run
+        required: true
+        type: choice
+        default: plan
+        options:
+          - plan
+          - apply
+      aws_region:
+        description: AWS region for the deployment
+        required: true
+        type: string
+        default: us-east-1
+      environment:
+        description: Environment suffix used by Terraform
+        required: true
+        type: string
+        default: dev
+
+concurrency:
+  group: manual-terraform-calculator-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      TF_IN_AUTOMATION: "true"
+      TF_INPUT: "false"
+      AWS_REGION: ${{ github.event.inputs.aws_region }}
+      TF_VAR_aws_region: ${{ github.event.inputs.aws_region }}
+      TF_VAR_environment: ${{ github.event.inputs.environment }}
+      TF_VAR_project_name: poc-step-function-calculator
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.25"
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Validate required AWS secrets
+        run: |
+          test -n "${{ secrets.AWS_ACCESS_KEY_ID }}" || (echo "Missing AWS_ACCESS_KEY_ID" >&2 && exit 1)
+          test -n "${{ secrets.AWS_SECRET_ACCESS_KEY }}" || (echo "Missing AWS_SECRET_ACCESS_KEY" >&2 && exit 1)
+
+      - name: Install Node.js dependencies
+        run: npm ci
+
+      - name: Build Lambda artifacts
+        run: ./scripts/build_lambdas.sh
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Terraform fmt
+        run: terraform -chdir=terraform fmt -check -recursive
+
+      - name: Terraform init
+        run: terraform -chdir=terraform init -input=false
+
+      - name: Terraform validate
+        run: terraform -chdir=terraform validate -no-color
+
+      - name: Terraform plan
+        run: terraform -chdir=terraform plan -input=false -no-color -out=tfplan
+
+      - name: Terraform apply
+        if: ${{ github.event.inputs.terraform_action == 'apply' }}
+        run: terraform -chdir=terraform apply -input=false -auto-approve tfplan

@@ -1,17 +1,21 @@
-data "archive_file" "number_generator" {
-  type        = "zip"
-  source_dir = "../lambdas/1_number_generator/"
-  output_path = "../lambdas/dist/1_number_generator.zip"
+resource "terraform_data" "build_lambdas" {
+  triggers_replace = {
+    source_hash = local.lambda_source_hash
+  }
+
+  provisioner "local-exec" {
+    command     = "./scripts/build_lambdas.sh"
+    interpreter = ["/bin/bash", "-lc"]
+    working_dir = "${path.module}/.."
+  }
 }
 
-data "archive_file" "even" {
-  type        = "zip"
-  source_dir = "../lambdas/2_even/"
-  output_path = "../lambdas/dist/2_even.zip"
-}
+data "archive_file" "lambda" {
+  for_each = local.lambda_definitions
 
-data "archive_file" "odd" {
   type        = "zip"
-  source_dir = "../lambdas/3_odd/"
-  output_path = "../lambdas/dist/3_odd.zip"
+  source_dir  = "${path.module}/../build/lambdas/${each.value.build_dir}"
+  output_path = "${path.module}/.terraform/${each.key}.zip"
+
+  depends_on = [terraform_data.build_lambdas]
 }

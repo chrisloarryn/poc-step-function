@@ -1,26 +1,22 @@
-resource "aws_lambda_function" "number_generator_lambda" {
-  filename      =  data.archive_file.number_generator.output_path
-  source_code_hash = data.archive_file.number_generator.output_base64sha256
-  function_name = "poc_number_generator_lambda"
-  role          = aws_iam_role.example_lambda_role.arn
-  handler       = "1_number_generator/main.handler"
-  runtime = "nodejs18.x"
-}
+resource "aws_lambda_function" "this" {
+  for_each = local.lambda_definitions
 
-resource "aws_lambda_function" "even_lambda" {
-  filename      =  data.archive_file.even.output_path
-  source_code_hash = data.archive_file.even.output_base64sha256
-  function_name = "poc_even_lambda"
-  role          = aws_iam_role.example_lambda_role.arn
-  handler       = "2_even/main.handler"
-  runtime = "nodejs18.x"
-}
+  function_name = local.lambda_function_names[each.key]
+  description   = each.value.description
+  role          = aws_iam_role.lambda_execution.arn
+  handler       = each.value.handler
+  runtime       = each.value.runtime
 
-resource "aws_lambda_function" "odd_lambda" {
-  filename      =  data.archive_file.odd.output_path
-  source_code_hash = data.archive_file.odd.output_base64sha256
-  function_name = "poc_odd_lambda"
-  role          = aws_iam_role.example_lambda_role.arn
-  handler       = "3_odd/main.handler"
-  runtime = "nodejs18.x"
+  filename         = data.archive_file.lambda[each.key].output_path
+  source_code_hash = data.archive_file.lambda[each.key].output_base64sha256
+
+  architectures = ["x86_64"]
+  memory_size   = var.lambda_memory_size
+  timeout       = var.lambda_timeout
+
+  depends_on = [
+    terraform_data.build_lambdas,
+    aws_cloudwatch_log_group.lambda,
+    aws_iam_role_policy_attachment.lambda_basic_execution,
+  ]
 }

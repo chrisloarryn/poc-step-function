@@ -1,0 +1,7 @@
+{
+  "name": "@poc-step-function/validate-request",
+  "version": "2.0.0",
+  "private": true,
+  "description": "TypeScript Lambda that validates calculator requests.",
+  "main": "src/main.ts"
+}

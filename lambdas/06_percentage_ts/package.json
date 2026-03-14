@@ -1,0 +1,7 @@
+{
+  "name": "@poc-step-function/percentage",
+  "version": "2.0.0",
+  "private": true,
+  "description": "TypeScript Lambda that calculates percentages.",
+  "main": "src/main.ts"
+}
